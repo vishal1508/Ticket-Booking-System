@@ -3,7 +3,128 @@
  */
 package org.booking;
 
+import org.booking.entities.Seat;
+import org.booking.entities.Train;
+import org.booking.entities.User;
+import org.booking.services.TrainService;
+import org.booking.services.UserBookingServices;
+import org.booking.utils.UserServiceUtil;
+
+import java.io.IOException;
+import java.util.*;
+
 public class App {
+    static Train trainSelectedforBooking;
+    private static final Scanner sc = new Scanner(System.in);
+    static User usertoLogin;
+    static UserBookingServices userBookingServices;
+
+
     public static void main(String[] args) {
+        System.out.println("Running Train Booking System");
+        Scanner sc = new Scanner(System.in);
+        int option = 0;
+        UserBookingServices userBookingServices;
+
+        try {
+            userBookingServices = new UserBookingServices();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        while (option != 7) {
+            System.out.println("Choose Option");
+            System.out.println("1. Sign Up");
+            System.out.println("2. Login");
+
+            option = sc.nextInt();
+            switch (option) {
+                case 1:
+                    System.out.println("Enter the Username For Signup");
+                    String username = sc.next();
+                    System.out.println("Enter the Password For Signup");
+                    String password = sc.next();
+                    User userToSignup = new User(username, password, UserServiceUtil.hashPassword(password), new ArrayList<>(), UUID.randomUUID().toString());
+                    userBookingServices.signUp(userToSignup);
+                    break;
+                case 2:
+                    handleLogin();
+                    break;
+            }
+
+        }
+    }
+
+    private static void handleLogin() {
+        System.out.print("Enter username: ");
+        String loginUserName = sc.nextLine();
+        System.out.print("Enter password: ");
+        String loginPassword = sc.nextLine();
+        String hashed = UserServiceUtil.hashPassword(loginPassword);
+
+        usertoLogin = new User(loginUserName, loginPassword, hashed, new ArrayList<>(), UUID.randomUUID().toString());
+        System.out.println(usertoLogin.getPassword());
+        if (usertoLogin != null) {
+            try {
+                userBookingServices = new UserBookingServices(usertoLogin);
+                System.out.println(userBookingServices.loadUser().getFirst().getName());
+                if(userBookingServices.loginUser()){
+                    System.out.println("✅ Login successful! Welcome " + usertoLogin.getName());
+                    showUserMenu(usertoLogin);
+                }else{
+                    System.out.println("❌ Invalid credentials!");
+                    return;
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            return;
+        }
+    }
+
+    private static void showUserMenu(User user) {
+        while (true) {
+            System.out.println("\n--- User Menu ---");
+            System.out.println("1. Fetch Booking");
+            System.out.println("2. Search Train");
+            System.out.println("3. Book a Seat");
+            System.out.println("4. Cancel My Booking soon");
+            System.out.println("5. Logout soon");
+            System.out.print("Choose: ");
+            int choice = sc.nextInt();
+            sc.nextLine();
+
+            switch (choice) {
+                case 1 -> {
+                    System.out.println("Fetching Your Booking");
+                    userBookingServices.fetchBooking();
+                }
+                case 2 -> {
+                    System.out.println("Type your Source Station");
+
+                    String source = sc.next();
+                    System.out.println("Type your Destination Station");
+                    String destination = sc.next();
+                    List<Train> trains = userBookingServices.getTrains(source, destination);
+                    for (int i = 1; i <= trains.size(); i++) {
+                        System.out.println("train size : " + (1 <= trains.size()));
+                        System.out.println("index :" + i + "Train ID : " + trains.get(i - 1).getTrainId());
+                        for (Map.Entry<String, String> entry : trains.get(i - 1).getStationTimes().entrySet()) {
+                            System.out.printf("[station : %s :: time : %s]\n", entry.getKey(), entry.getValue());
+                        }
+
+                    }
+                    System.out.println("Select a train  by typing 1,2,..");
+                    trainSelectedforBooking = trains.get(sc.nextInt() - 1);
+                    System.out.println("selected train :" + trainSelectedforBooking);
+                }
+                case 3 -> {
+                    trainSelectedforBooking.showSeats();
+                    String seatNumber = String.valueOf(sc.nextInt());
+                    trainSelectedforBooking.bookSeat(seatNumber, usertoLogin.getUserId());
+                }
+                default -> System.out.println("Invalid choice!");
+            }
+        }
     }
 }
