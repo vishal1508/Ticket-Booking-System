@@ -31,25 +31,31 @@ public class App {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        while (option != 7) {
+        while (option != 3) {
             System.out.println("Choose Option");
             System.out.println("1. Sign Up");
             System.out.println("2. Login");
+            System.out.print("Enter your choice: ");
 
-            option = sc.nextInt();
+            try {
+                option = sc.nextInt();
+            } catch (InputMismatchException e) {
+                System.out.println("Invalid input! Please enter a number.");
+                sc.nextLine(); // clear invalid input from scanner buffer
+                option = -1;   // assign a default or invalid value
+            }
             switch (option) {
                 case 1:
-                    System.out.println("Enter the Username For Signup");
-                    String username = sc.next();
-                    System.out.println("Enter the Password For Signup");
-                    String password = sc.next();
-                    User userToSignup = new User(username, password, UserServiceUtil.hashPassword(password), new ArrayList<>(), UUID.randomUUID().toString());
-                    userBookingServices.signUp(userToSignup);
+                    handleSignUp();
                     break;
                 case 2:
                     handleLogin();
                     break;
+                default:
+                    System.out.println("❌ Invalid choice. Please select 1, 2, or 3.");
+
             }
+
 
         }
     }
@@ -62,15 +68,13 @@ public class App {
         String hashed = UserServiceUtil.hashPassword(loginPassword);
 
         usertoLogin = new User(loginUserName, loginPassword, hashed, new ArrayList<>(), UUID.randomUUID().toString());
-        System.out.println(usertoLogin.getPassword());
         if (usertoLogin != null) {
             try {
                 userBookingServices = new UserBookingServices(usertoLogin);
-                System.out.println(userBookingServices.loadUser().getFirst().getName());
-                if(userBookingServices.loginUser()){
+                if (userBookingServices.loginUser()) {
                     System.out.println("✅ Login successful! Welcome " + usertoLogin.getName());
                     showUserMenu(usertoLogin);
-                }else{
+                } else {
                     System.out.println("❌ Invalid credentials!");
                     return;
                 }
@@ -80,6 +84,28 @@ public class App {
         } else {
             return;
         }
+    }
+
+    private static void handleSignUp() {
+        System.out.println("Enter the Username For Signup");
+        String username = sc.next();
+        System.out.println("Enter the Password For Signup");
+        String password = sc.next();
+        User userToSignup = new User(username, password, UserServiceUtil.hashPassword(password), new ArrayList<>(), UUID.randomUUID().toString());
+        try {
+            userBookingServices = new UserBookingServices(userToSignup);
+            if (!userBookingServices.signUp(userToSignup)) {
+                System.out.println("user is already exist");
+                return;
+            } else {
+                System.out.println("Sign has been Successfull");
+                return;
+            }
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
     private static void showUserMenu(User user) {

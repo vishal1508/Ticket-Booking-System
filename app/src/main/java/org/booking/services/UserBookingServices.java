@@ -40,23 +40,24 @@ public class UserBookingServices {
 
     public Boolean loginUser() {
         Optional<User> foundUSer = userList.stream().filter(user -> {
-            System.out.println("existing user hashpassowrd for user :"+user.getHashPassword());
-            System.out.println("existing user name for user :"+user.getName());
-        System.out.println("pass : => "+ (user.equals(user1.getName())  && UserServiceUtil.checkPassword(user1.getPassword(),user.getHashPassword())));
             return user.getName().equals(user1.getName()) && UserServiceUtil.checkPassword(user1.getPassword(), user.getHashPassword());
         }).findFirst();
-        System.out.println("user found :=> "+foundUSer);
         return foundUSer.isPresent();
     }
 
     public Boolean signUp(User user) {
         try {
+            Boolean isUserMatch = userList.stream().anyMatch(usr -> usr.getName().equals(user.getName()));
+            if (isUserMatch) {
+                return Boolean.FALSE;
+            }
             userList.add(user);
             saveUserListToFile();
             return Boolean.TRUE;
+
         } catch (Exception e) {
             System.out.println(e);
-            return Boolean.TRUE;
+            return Boolean.FALSE;
         }
 
     }
@@ -74,11 +75,11 @@ public class UserBookingServices {
         return Boolean.FALSE;
     }
 
-    public List<Train> getTrains(String source, String destination){
-        try{
+    public List<Train> getTrains(String source, String destination) {
+        try {
             TrainService trainService = new TrainService();
-            return trainService.searchTrain(source,destination);
-        }catch (IOException e){
+            return trainService.searchTrain(source, destination);
+        } catch (IOException e) {
             System.out.println(e);
             return new ArrayList<Train>();
         }
